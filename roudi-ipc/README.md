@@ -23,7 +23,7 @@ Without CMake:
 ```sh
 mkdir -p build
 g++ -std=c++23 -O2 -Wall -Wextra -Wpedantic -Werror -Iinclude src/ipc.cpp src/producer.cpp -o build/producer -lrt
-g++ -std=c++23 -O2 -Wall -Wextra -Wpedantic -Werror -Iinclude src/ipc.cpp src/consumer.cpp -o build/consumer -lrt
+g++ -std=c++23 -O2 -Wall -Wextra -Wpedantic -Werror -pthread -Iinclude src/ipc.cpp src/consumer.cpp -o build/consumer -lrt
 python3 tests/smoke.py build
 ```
 
@@ -48,6 +48,35 @@ roughly every 10 ms with `price = sequence` and `quantity = sequence * 3`, modul
 32 bits. Socket handshakes can delay this rate. Logging is intentionally simple.
 
 ## Registry: ownership and synchronization
+
+The consumer has four threads: one discovery thread and three reader
+`std::jthread`s (worker IDs 0, 1, 2). The main thread scans the registry, reclaims
+slots, and performs socket handshakes and mapping validation. Each reader reads
+quotes and detects producer death for its own group. Slow discovery handshakes
+do not block reading from already attached producers.
+
+New connections go to the group with the fewest connections in the current
+membership snapshot; ties select the lowest worker ID. Nine live producers are
+assigned 3/3/3. Each producer stays with its reader until it exits. Departures
+lower the group count, so later arrivals favor less-loaded groups. Existing
+connections are not migrated: groups can become uneven after departures. This
+balances producer counts, not CPU utilization or quote rates.
+
+A process-local mutex protects group membership while adding, removing, counting,
+or copying connections. Each reader snapshots its group's `shared_ptr<Connection>` objects
+and releases the mutex before reading or logging. Snapshot ownership keeps each
+mapping and its FDs alive until reading finishes. Only the reader modifies quote
+cursors and emits `DETACH` for its own connections; no quote follows that detach.
+No connection belongs to multiple groups. Logs include `worker=N`. Per-producer
+ordering is preserved; there is no global quote order across workers.
+These pointers and the mutex are ordinary consumer-local objects, never shared
+memory fields. `std::osyncstream` keeps log records from all threads intact.
+
+Shutdown requests all stop tokens before joining readers and destroying mappings
+and the registry. This also holds during exceptions and partial thread startup.
+Each reader has a separate exception slot, read by main after joining. The signal
+flag is a lock-free atomic because signals can reach any thread. Logging uses synchronous stdout:
+a blocked output destination can delay quote reading and shutdown.
 
 `include/ipc.hpp` is the canonical ABI definition. `Registry` is 9,752 bytes:
 
@@ -176,8 +205,10 @@ Resource exhaustion fails visibly; connection failures retry. The example uses
 polling and synchronous stdout output rather than a high-throughput event loop.
 
 `tests/smoke.py` refuses to run over an existing `/roudi`. It checks early and late
-producer startup, three simultaneous producers, singleton consumer ownership,
-registry-lock holder death with an incomplete record, actual FD transfer,
+producer startup, nine producers split 3/3/3, four consumer threads, assignment
+after exits, single-reader ownership and sequence ordering, singleton ownership,
+registry-lock holder death with an incomplete record, reader progress during
+stalled discovery handshakes, actual FD transfer,
 malformed request rejection, producer pause, ring overwrite,
 SIGKILL and graceful producer exit, slot reclamation, consumer crash and clean
 restart, re-registration and quote integrity. The test controls and kills only

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Real Linux integration test. Refuses to replace an existing /roudi."""
 import array
+import fcntl
+import mmap
 import os
 from pathlib import Path
 import re
@@ -49,6 +51,12 @@ def quotes(log, pid):
     return re.findall(rf"QUOTE pid={pid} seq=(\d+) price=(\d+) quantity=(\d+)", contents(log))
 
 
+def assigned_worker(log, pid):
+    matches = re.findall(rf"ATTACH pid={pid} identity=\d+ worker=(\d+)", contents(log))
+    assert len(matches) == 1, (pid, matches)
+    return int(matches[0])
+
+
 if Path("/dev/shm/roudi").exists():
     sys.exit("Refusing to run: /roudi already exists; use an isolated IPC namespace or stop its owner.")
 
@@ -86,6 +94,54 @@ with open('/dev/shm/roudi', 'r+b', buffering=0) as f:
         p3, l3 = start("producer", "producer3")
         wait_for(lambda: len(quotes(cl1, p3.pid)) > 5, "late producer delivers")
         print("PASS producer-first startup, 3 producers, singleton consumer, killed registry writer")
+
+        extra_producers = [start("producer", f"balanced-{i}")[0] for i in range(6)]
+        all_producers = [p1, p2, p3] + extra_producers
+        wait_for(lambda: all(len(quotes(cl1, p.pid)) > 5 for p in all_producers),
+                 "nine producers deliver")
+        workers = [assigned_worker(cl1, p.pid) for p in all_producers]
+        assert [workers.count(i) for i in range(3)] == [3, 3, 3], workers
+        assert len(list(Path(f"/proc/{c1.pid}/task").iterdir())) == 4
+        for p in extra_producers:
+            stop(p)
+        wait_for(lambda: all(f"DETACH pid={p.pid} " in contents(cl1) for p in extra_producers),
+                 "extra producers detach")
+        print("PASS nine producers evenly assigned to three reader threads")
+
+        # Twelve live but unresponsive registry endpoints keep discovery in FD
+        # handshakes for ~1.2 seconds. Existing quotes must keep flowing meanwhile.
+        slow_path = f"/tmp/roudi-ipc-{os.getuid()}/test-slow-{os.getpid()}.sock"
+        slow_ids = set(range(0xDEAD0000, 0xDEAD000C))
+        with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as slow:
+            slow.bind(slow_path)
+            slow.listen(32)
+            slow.settimeout(3)
+            try:
+                stat = Path(f"/proc/{os.getpid()}/stat").read_text()
+                ticks = int(stat[stat.rfind(")") + 2:].split()[19])
+                with open("/dev/shm/roudi", "r+b", buffering=0) as f:
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    with mmap.mmap(f.fileno(), 0) as reg:
+                        for i, identity in enumerate(sorted(slow_ids), start=40):
+                            struct.pack_into("=QQQQiI108sI", reg, 24 + i * 152,
+                                             1, identity, ticks, time.monotonic_ns(),
+                                             os.getpid(), 0, slow_path.encode(), 0)
+                client, _ = slow.accept()
+                with client:
+                    count = len(quotes(cl1, p1.pid))
+                    wait_for(lambda: len(quotes(cl1, p1.pid)) > count + 5,
+                             "reader continues during stalled discovery", timeout=.6)
+                assert len(list(Path(f"/proc/{c1.pid}/task").iterdir())) == 4
+            finally:
+                with open("/dev/shm/roudi", "r+b", buffering=0) as f:
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    with mmap.mmap(f.fileno(), 0) as reg:
+                        for i in range(64):
+                            offset = 24 + i * 152
+                            if struct.unpack_from("=Q", reg, offset + 8)[0] in slow_ids:
+                                struct.pack_into("=Q", reg, offset, 0)
+                Path(slow_path).unlink(missing_ok=True)
+        print("PASS reader threads deliver quotes during stalled discovery")
 
         # Validate packet framing, versions, generation and actual SCM_RIGHTS.
         identity = int(re.search(r"identity=(\d+)", contents(l1)).group(1))
@@ -147,6 +203,13 @@ with open('/dev/shm/roudi', 'r+b', buffering=0) as f:
         wait_for(stale_slots_removed, "dead registry slots reclaimed")
         print("PASS SIGKILL and graceful exit detach mappings and reclaim slots")
 
+        replacement, _ = start("producer", "replacement")
+        wait_for(lambda: len(quotes(cl1, replacement.pid)) > 5, "replacement producer delivers")
+        assert assigned_worker(cl1, replacement.pid) != assigned_worker(cl1, p3.pid)
+        stop(replacement)
+        wait_for(lambda: f"DETACH pid={replacement.pid} " in contents(cl1), "replacement detached")
+        print("PASS new producer uses a less-loaded reader after exits")
+
         stop(c1, crash=True)
         c2, cl2 = start("consumer", "consumer2")
         wait_for(lambda: len(quotes(cl2, p3.pid)) > 5, "survivor re-registers after consumer crash")
@@ -160,9 +223,30 @@ with open('/dev/shm/roudi', 'r+b', buffering=0) as f:
         for log in (cl1, cl2, cl3):
             data = contents(log)
             assert "consumer:" not in data
+            last_sequence = {}
+            owner = {}
+            detached = set()
+            for line in data.splitlines():
+                match = re.fullmatch(r"ATTACH pid=(\d+) identity=\d+ worker=(\d+)", line)
+                if match:
+                    pid, worker = map(int, match.groups())
+                    assert pid not in owner, "duplicate attachment"
+                    owner[pid] = worker
+                match = re.fullmatch(r"DETACH pid=(\d+) identity=\d+ worker=(\d+)", line)
+                if match:
+                    pid, worker = map(int, match.groups())
+                    assert owner[pid] == worker
+                    detached.add(pid)
+                match = re.fullmatch(r"QUOTE pid=(\d+) seq=(\d+) price=\d+ quantity=\d+ worker=(\d+)", line)
+                if match:
+                    pid, seq, worker = map(int, match.groups())
+                    assert pid not in detached, "quote after detach"
+                    assert owner[pid] == worker, "producer read by wrong worker"
+                    assert seq > last_sequence.get(pid, 0), "duplicate or out-of-order quote"
+                    last_sequence[pid] = seq
             for seq, price, quantity in re.findall(r"seq=(\d+) price=(\d+) quantity=(\d+)", data):
                 assert int(price) == int(seq) and int(quantity) == 3 * int(seq), "torn quote"
-        print("PASS consumer crash/graceful restart and quote integrity")
+        print("PASS consumer restart, quote integrity, single-reader ownership and ordering")
         print("ALL SMOKE TESTS PASSED")
     except BaseException:
         for log in files:

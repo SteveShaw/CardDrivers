@@ -428,48 +428,202 @@ solution.flip();  // return [2, 0], [0,0], [1,0], and [2,0] should be equally li
 Use a **lazy Fisher–Yates shuffle**: flatten the matrix into indices `[0, m*n)` and randomly remove one index per `flip()`. Instead of storing every index, use a hash map to record only positions whose values have changed.
 
 ```cpp
-#include <random>
-#include <unordered_map>
-#include <vector>
-
 class Solution {
-    int cols_;
-    int total_;
-    int remaining_;
-
-    // Virtual array: value at position p is moved_[p] if present,
-    // otherwise it is p.
-    std::unordered_map<int, int> moved_;
-    std::mt19937 rng_{std::random_device{}()};
-
-    int valueAt(int p) const {
-        auto it = moved_.find(p);
-        return it == moved_.end() ? p : it->second;
-    }
-
 public:
-    Solution(int m, int n)
-        : cols_(n), total_(m * n), remaining_(total_) {}
+int64_t total {};
+int64_t cols {};
+int64_t rows {};
+unordered_map<int64_t, int64_t> mapping;
 
-    std::vector<int> flip() {
-        // Assumes at least one zero remains.
-        std::uniform_int_distribution<int> dist(0, remaining_ - 1);
-        int pos = dist(rng_);
-        int chosen = valueAt(pos);
+random_device seeder;
+mt19937 rng{seeder()};
 
-        // Remove chosen by replacing it with the last active value.
-        int last = --remaining_;
-        if (pos != last) {
-            moved_[pos] = valueAt(last);
-        }
-        moved_.erase(last);
-
-        return {chosen / cols_, chosen % cols_};
+    Solution(int m, int n) {
+        cols = n;
+        rows = m;
+        total = cols * rows;
     }
+    
+    vector<int> flip() {
+        
+        uniform_int_distribution<int64_t> dist(0, total - 1);
+        auto random_index = dist(rng);
 
+        auto sel = index;
+
+        auto [it_index, succ] = mapping.try_emplace(random_index);
+
+        if(!succ)
+        {
+            sel = it_index->second;
+        }
+        
+        --total;
+
+        //find if we already have mapping for total
+        if(auto it = mapping.find(total); it != end(mapping))
+        {
+            it_index->second = it->second;
+        }
+        else
+        {
+            it_index->second = total;
+        }
+        return {static_cast<int>(sel / cols), static_cast<int>(sel % cols) };
+    }
+    
     void reset() {
-        moved_.clear();
-        remaining_ = total_;
+        
+        mapping.clear();
+        total = rows * cols;
     }
 };
+
+/**
+ * Your Solution object will be instantiated and called as such:
+ * Solution* obj = new Solution(m, n);
+ * vector<int> param_1 = obj->flip();
+ * obj->reset();
+ */
 ```
+
+For example, the virtual array initially contains:
+
+```
+[0, 1, 2, 3, 4, 5]
+```
+
+If position `2` is selected, return index `2`, replace it with the last active value `5`, and shrink the active range:
+
+```
+[0, 1, 5, 3, 4]
+```
+
+The map only needs to store `{2 → 5}`.
+
+**Why it is uniform:** The active range contains every unflipped index exactly once. Selecting a uniformly random position therefore selects every remaining zero with probability `1 / remaining_`.
+
+## 528. Random Pick with Weight
+
+You are given a 0-indexed array of positive integers `w` where `w[i]` describes the weight of the `i`-th index.
+
+You need to implement the function `pickIndex()`, which randomly picks an index in the range `[0, w.length - 1]` (inclusive) and returns it. The probability of picking an index `i` is `w[i] / sum(w)`.
+
+For example, if `w = [1, 3]`, the probability of picking index `0` is `1 / (1 + 3) = 0.25` (i.e., `25%`), and the probability of picking index 1 is `3 / (1 + 3) = 0.75` (i.e., `75%`).
+
+**Example 1:**
+
+**Input**
+["Solution","pickIndex"]
+[[[1]],[]]
+**Output**
+[null,0]
+**Explanation**
+`Solution solution = new Solution([1]);`
+`solution.pickIndex(); // return 0. The only option is to return 0 since there is only one element in w`.
+
+**Example 2:**
+
+**Input**
+`["Solution","pickIndex","pickIndex","pickIndex","pickIndex","pickIndex"] `
+
+`[[[1,3]],[],[],[],[],[]]`
+
+ **Output**
+`[null,1,1,1,1,0]`
+
+ **Explanation**
+`Solution solution = new Solution([1, 3]);
+solution.pickIndex(); // return 1. It is returning the second element (index = 1) that has a probability of 3/4.
+solution.pickIndex(); // return 1
+solution.pickIndex(); // return 1
+solution.pickIndex(); // return 1
+solution.pickIndex(); // return 0. It is returning the first element (index = 0) that has a probability of 1/4.
+Since this is a randomization problem, multiple answers are allowed.
+All of the following outputs can be considered correct`:
+`[null,1,1,1,1,0]` 
+
+`[null,1,1,1,1,1]` 
+
+`[null,1,1,1,0,0]` 
+
+`[null,1,1,1,0,1]` 
+
+`[null,1,0,1,0,0]`
+
+` ......` 
+
+`and so on`.
+
+## Solution
+
+Similar to problem *497*
+
+```cpp
+class Solution {
+public:
+vector<int> acc;
+random_device seeder;
+mt19937 rng{seeder()};
+    Solution(vector<int>& w) {
+        acc.resize(size(w));
+        acc[0] = w[0];
+        for(auto i : std::views::iota(0uz, size(w)) | std::views::drop(1))
+        {
+            acc[i] = acc[i-1] + w[i];
+        }
+    }
+
+    auto leftmost(int weight)
+    {
+        size_t L = 0;
+        size_t R = size(acc);
+        while(L < R)
+        {
+            auto mid = L + (R-L)/2;
+            if(acc[mid] < weight)
+            {
+                L = mid + 1;
+            }
+            else
+            {
+                R = mid;
+            }
+        }
+
+        return L;
+    }
+    
+    int pickIndex() {
+        
+        uniform_int_distribution<int> dist(1, acc.back());
+        auto random_weight = dist(rng);
+
+        auto pre = leftmost(random_weight);
+        if(cmp_equal(pre, size(acc)))
+         {
+            --pre;
+         }
+
+         return pre;
+    }
+};
+
+/**
+ * Your Solution object will be instantiated and called as such:
+ * Solution* obj = new Solution(w);
+ * int param_1 = obj->pickIndex();
+ */
+```
+
+## 710. Random Pick with Blacklist
+
+You are given an integer `n` and an array of **unique** integers `blacklist`. Design an algorithm to pick a random integer in the range `[0, n - 1]` that is **not** in blacklist. Any integer that is in the mentioned range and not in `blacklist` should be equally likely to be returned.
+
+Optimize your algorithm such that it minimizes the number of calls to the **built-in** random function of your language.
+
+Implement the Solution class:
+
+* `Solution(int n, int[] blacklist)` Initializes the object with the integer `n` and the blacklisted integers `blacklist`.
+
+* `int pick()` Returns a random integer in the range `[0, n - 1]` and not in `blacklist`.

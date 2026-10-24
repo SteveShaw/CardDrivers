@@ -1,0 +1,2 @@
+FAIL bid_partial_then_cancel: line 25: got[i].qty == e.qty
+0 passed, 1 failed, 1 selected

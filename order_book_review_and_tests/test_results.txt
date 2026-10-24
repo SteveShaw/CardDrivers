@@ -1,0 +1,54 @@
+PASS empty_and_unknown_ids
+PASS bid_non_crossing
+FAIL bid_partial_fill_depth (see test_logs/bid_partial_fill_depth.log)
+FAIL bid_full_fill_last_order (see test_logs/bid_full_fill_last_order.log)
+FAIL bid_fifo_and_partial_second (see test_logs/bid_fifo_and_partial_second.log)
+FAIL bid_multiple_levels_limit (see test_logs/bid_multiple_levels_limit.log)
+FAIL bid_price_improvement (see test_logs/bid_price_improvement.log)
+FAIL bid_partial_then_cancel (see test_logs/bid_partial_then_cancel.log)
+FAIL bid_cancel_head_middle_tail (see test_logs/bid_cancel_head_middle_tail.log)
+FAIL bid_cancel_only_level (see test_logs/bid_cancel_only_level.log)
+PASS bid_modify_reduce_preserves_fifo
+FAIL bid_modify_noop_preserves_fifo (see test_logs/bid_modify_noop_preserves_fifo.log)
+PASS bid_modify_increase_loses_fifo
+PASS bid_modify_price_moves_level
+FAIL bid_modify_crosses (see test_logs/bid_modify_crosses.log)
+FAIL bid_modify_zero_cancels (see test_logs/bid_modify_zero_cancels.log)
+PASS bid_depth_order_and_limits
+PASS bid_duplicate_non_crossing
+FAIL bid_duplicate_crossing (see test_logs/bid_duplicate_crossing.log)
+FAIL bid_duplicate_crossing_other_order (see test_logs/bid_duplicate_crossing_other_order.log)
+PASS bid_zero_negative_add
+FAIL bid_negative_modify_same_price (see test_logs/bid_negative_modify_same_price.log)
+FAIL bid_negative_modify_new_price (see test_logs/bid_negative_modify_new_price.log)
+FAIL bid_invalid_prices (see test_logs/bid_invalid_prices.log)
+FAIL bid_quantity_overflow (see test_logs/bid_quantity_overflow.log)
+FAIL bid_extreme_price_quantity_and_ids (see test_logs/bid_extreme_price_quantity_and_ids.log)
+PASS ask_non_crossing
+FAIL ask_partial_fill_depth (see test_logs/ask_partial_fill_depth.log)
+FAIL ask_full_fill_last_order (see test_logs/ask_full_fill_last_order.log)
+FAIL ask_fifo_and_partial_second (see test_logs/ask_fifo_and_partial_second.log)
+FAIL ask_multiple_levels_limit (see test_logs/ask_multiple_levels_limit.log)
+FAIL ask_price_improvement (see test_logs/ask_price_improvement.log)
+FAIL ask_partial_then_cancel (see test_logs/ask_partial_then_cancel.log)
+FAIL ask_cancel_head_middle_tail (see test_logs/ask_cancel_head_middle_tail.log)
+FAIL ask_cancel_only_level (see test_logs/ask_cancel_only_level.log)
+PASS ask_modify_reduce_preserves_fifo
+FAIL ask_modify_noop_preserves_fifo (see test_logs/ask_modify_noop_preserves_fifo.log)
+PASS ask_modify_increase_loses_fifo
+PASS ask_modify_price_moves_level
+FAIL ask_modify_crosses (see test_logs/ask_modify_crosses.log)
+FAIL ask_modify_zero_cancels (see test_logs/ask_modify_zero_cancels.log)
+PASS ask_depth_order_and_limits
+PASS ask_duplicate_non_crossing
+FAIL ask_duplicate_crossing (see test_logs/ask_duplicate_crossing.log)
+FAIL ask_duplicate_crossing_other_order (see test_logs/ask_duplicate_crossing_other_order.log)
+PASS ask_zero_negative_add
+FAIL ask_negative_modify_same_price (see test_logs/ask_negative_modify_same_price.log)
+FAIL ask_negative_modify_new_price (see test_logs/ask_negative_modify_new_price.log)
+FAIL ask_invalid_prices (see test_logs/ask_invalid_prices.log)
+FAIL ask_quantity_overflow (see test_logs/ask_quantity_overflow.log)
+FAIL ask_extreme_price_quantity_and_ids (see test_logs/ask_extreme_price_quantity_and_ids.log)
+FAIL invalid_side_empty (see test_logs/invalid_side_empty.log)
+FAIL invalid_side_crossing (see test_logs/invalid_side_crossing.log)
+15 passed, 38 failed

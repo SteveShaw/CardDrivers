@@ -1,0 +1,2 @@
+FAIL bid_price_improvement: line 32: got[i].prc == e.prc
+0 passed, 1 failed, 1 selected

@@ -1,0 +1,2 @@
+FAIL ask_duplicate_crossing: line 44: operation().empty()
+0 passed, 1 failed, 1 selected

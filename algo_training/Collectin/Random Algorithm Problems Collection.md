@@ -308,3 +308,168 @@ solution.pick(); // return [0, 0]
 * `y_i - b_i <= 2000`
 * All the rectangles do not overlap.
 * At most $10^4$ calls will be made to pick.
+
+### Solution
+
+```cpp
+class Solution {
+public:
+    vector<int64_t> rct_pts;
+    random_device seeder;
+    mt19937 rng{seeder()};
+    
+    vector<vector<int>> rects_;
+    Solution(vector<vector<int>>& rects) {
+        
+        rct_pts.reserve(rects.size());
+
+        uint64_t total = 0;
+        for(auto i: views::iota(0uz, rects.size()))
+        {
+            const auto& rect = rects[i];
+            auto w = static_cast<int64_t>(rect[2] - rect[0] + 1);
+            auto h = static_cast<int64_t>(rect[3] - rect[1] + 1);
+            total += w * h;
+            rct_pts.push_back(total);
+        }
+
+        rects_ = std::move(rects);
+    }
+
+    ssize_t leftmost(uint64_t target)
+    {
+        ssize_t left = 0;
+        ssize_t right = ssize(rct_pts);
+
+        while(left < right)
+        {
+            auto mid = left + (right - left) / 2;
+            if(rct_pts[mid] < target)
+            {
+                left = mid + 1;
+            }
+            else
+            {
+                right = mid;
+            }
+        }
+
+        return left;
+    }
+    
+    vector<int> pick() {
+        
+//we need random value between [0, total points - 1];
+//total points = total area
+        uniform_int_distribution<> dist(0, rct_pts.back() - 1);
+        auto val = dist(rng);
+
+        //find first index so that rct_pts[0] + ... + rct_pts[index] >= val + 1
+        //because the points are starting from zero
+       auto predecessor = leftmost(val + 1);
+
+        const auto& rect = rects_[predecessor];
+
+        auto w = rect[2] - rect[0] + 1;
+
+        //offset means how many points are in the current rectangle `rect`
+        //target value minus the total points in the previous index
+        auto offset = val - (predecessor >0 ? rct_pts[predecessor-1] : 0);
+
+        return {rect[0] + static_cast<int>(offset % w), rect[1] + static_cast<int>(offset / w)};
+
+    }
+};
+
+/**
+ * Your Solution object will be instantiated and called as such:
+ * Solution* obj = new Solution(rects);
+ * vector<int> param_1 = obj->pick();
+ */
+```
+
+## 519. Random Flip Matrix
+
+There is an `m x n` binary grid matrix with all the values set `0` initially. Design an algorithm to randomly pick an `index (i, j)` where `matrix[i][j] == 0` and flips it to `1`. All the `indices (i, j)` where `matrix[i][j] == 0` should be equally likely to be returned.
+
+Optimize your algorithm to minimize the number of calls made to the **built-in** random function of your language and optimize the time and space complexity.
+
+Implement the `Solution` class:
+
+* `Solution(int m, int n)` Initializes the object with the size of the binary matrix `m` and `n`.
+
+* `int[] flip()` Returns a random index `[i, j]` of the matrix where `matrix[i][j] == 0` and flips it to `1`.
+
+* `void reset()` Resets all the values of the matrix to be 0.
+
+**Example 1:**
+
+**Input**
+["Solution", "flip", "flip", "flip", "reset", "flip"]
+[[3, 1], [], [], [], [], []]
+**Output**
+[null, [1, 0], [2, 0], [0, 0], null, [2, 0]]
+**Explanation**
+Solution solution = new Solution(3, 1);
+solution.flip();  // return [1, 0], [0,0], [1,0], and [2,0] should be equally likely to be returned.
+solution.flip();  // return [2, 0], Since [1,0] was returned, [2,0] and [0,0]
+solution.flip();  // return [0, 0], Based on the previously returned indices, only [0,0] can be returned.
+solution.reset(); // All the values are reset to 0 and can be returned.
+solution.flip();  // return [2, 0], [0,0], [1,0], and [2,0] should be equally likely to be returned.
+
+**Constraints:**
+
+* $1$ `<= m, n <=` $10^4$
+* There will be at least one free cell for each call to flip.
+* At most 1000 calls will be made to flip and reset.
+
+### Solution
+
+Use a **lazy Fisher–Yates shuffle**: flatten the matrix into indices `[0, m*n)` and randomly remove one index per `flip()`. Instead of storing every index, use a hash map to record only positions whose values have changed.
+
+```cpp
+#include <random>
+#include <unordered_map>
+#include <vector>
+
+class Solution {
+    int cols_;
+    int total_;
+    int remaining_;
+
+    // Virtual array: value at position p is moved_[p] if present,
+    // otherwise it is p.
+    std::unordered_map<int, int> moved_;
+    std::mt19937 rng_{std::random_device{}()};
+
+    int valueAt(int p) const {
+        auto it = moved_.find(p);
+        return it == moved_.end() ? p : it->second;
+    }
+
+public:
+    Solution(int m, int n)
+        : cols_(n), total_(m * n), remaining_(total_) {}
+
+    std::vector<int> flip() {
+        // Assumes at least one zero remains.
+        std::uniform_int_distribution<int> dist(0, remaining_ - 1);
+        int pos = dist(rng_);
+        int chosen = valueAt(pos);
+
+        // Remove chosen by replacing it with the last active value.
+        int last = --remaining_;
+        if (pos != last) {
+            moved_[pos] = valueAt(last);
+        }
+        moved_.erase(last);
+
+        return {chosen / cols_, chosen % cols_};
+    }
+
+    void reset() {
+        moved_.clear();
+        remaining_ = total_;
+    }
+};
+```

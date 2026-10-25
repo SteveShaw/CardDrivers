@@ -1,0 +1,2 @@
+FAIL bid_invalid_prices: line 46: equal(bids,b.top(Side::Buy,100))
+0 passed, 1 failed, 1 selected

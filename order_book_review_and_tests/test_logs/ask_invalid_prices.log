@@ -1,0 +1,2 @@
+FAIL ask_invalid_prices: line 46: equal(asks,b.top(Side::Sell,100))
+0 passed, 1 failed, 1 selected

@@ -1,0 +1,84 @@
+=================================================================
+==466==ERROR: AddressSanitizer: heap-use-after-free on address 0x5040000003a0 at pc 0x000000408535 bp 0x7ffe1c439e20 sp 0x7ffe1c439e10
+READ of size 8 at 0x5040000003a0 thread T0
+    #0 0x408534 in cpplib::OrderBook::remove_order(cpplib::Order*) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:54
+    #1 0x40aec0 in cpplib::OrderBook::match_sell_side(std::optional<long>, long&) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:168
+    #2 0x40dbfe in cpplib::OrderBook::add_order(unsigned long, cpplib::Side, long, long) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:188
+    #3 0x4be459 in operator() /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests.cpp:200
+    #4 0x4bea4a in __invoke_impl<void, main(int, char**)::<lambda()>&> /usr/include/c++/13/bits/invoke.h:61
+    #5 0x4bea4a in __invoke_r<void, main(int, char**)::<lambda()>&> /usr/include/c++/13/bits/invoke.h:111
+    #6 0x4bea4a in _M_invoke /usr/include/c++/13/bits/std_function.h:290
+    #7 0x4b46b3 in std::function<void ()>::operator()() const /usr/include/c++/13/bits/std_function.h:591
+    #8 0x4b46b3 in main /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests.cpp:221
+    #9 0x7fb83dd581c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 6d64b17fbac799e68da7ebd9985ddf9b5cb375e6)
+    #10 0x7fb83dd5828a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 6d64b17fbac799e68da7ebd9985ddf9b5cb375e6)
+    #11 0x404e14 in _start (/mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests+0x404e14) (BuildId: ef06232357ef8202f59179b8803c56962404fb1a)
+
+0x5040000003a0 is located 16 bytes inside of 40-byte region [0x504000000390,0x5040000003b8)
+freed by thread T0 here:
+    #0 0x7fb83e9ec5e8 in operator delete(void*, unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:164
+    #1 0x43962d in std::_Rb_tree<long, std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > >, std::_Select1st<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > >, std::less<long>, std::allocator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > > >::_M_erase_aux(std::_Rb_tree_const_iterator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > >) (/mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests+0x43962d) (BuildId: ef06232357ef8202f59179b8803c56962404fb1a)
+    #2 0x407b91 in std::_Rb_tree<long, std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > >, std::_Select1st<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > >, std::less<long>, std::allocator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > > >::erase[abi:cxx11](std::_Rb_tree_iterator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > >) /usr/include/c++/13/bits/stl_tree.h:1210
+    #3 0x407b91 in std::map<long, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> >, std::less<long>, std::allocator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > > >::erase[abi:cxx11](std::_Rb_tree_iterator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > >) /usr/include/c++/13/bits/stl_map.h:1088
+    #4 0x407b91 in cpplib::OrderBook::remove_order(cpplib::Order*) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:46
+    #5 0x40aec0 in cpplib::OrderBook::match_sell_side(std::optional<long>, long&) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:168
+    #6 0x40dbfe in cpplib::OrderBook::add_order(unsigned long, cpplib::Side, long, long) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:188
+    #7 0x4be459 in operator() /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests.cpp:200
+    #8 0x4bea4a in __invoke_impl<void, main(int, char**)::<lambda()>&> /usr/include/c++/13/bits/invoke.h:61
+    #9 0x4bea4a in __invoke_r<void, main(int, char**)::<lambda()>&> /usr/include/c++/13/bits/invoke.h:111
+    #10 0x4bea4a in _M_invoke /usr/include/c++/13/bits/std_function.h:290
+    #11 0x4b46b3 in std::function<void ()>::operator()() const /usr/include/c++/13/bits/std_function.h:591
+    #12 0x4b46b3 in main /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests.cpp:221
+    #13 0x7fb83dd581c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 6d64b17fbac799e68da7ebd9985ddf9b5cb375e6)
+    #14 0x7fb83dd5828a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 6d64b17fbac799e68da7ebd9985ddf9b5cb375e6)
+    #15 0x404e14 in _start (/mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests+0x404e14) (BuildId: ef06232357ef8202f59179b8803c56962404fb1a)
+
+previously allocated by thread T0 here:
+    #0 0x7fb83e9eb548 in operator new(unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:95
+    #1 0x40b2f2 in std::__detail::_MakeUniq<cpplib::Level>::__single_object std::make_unique<cpplib::Level>() /usr/include/c++/13/bits/unique_ptr.h:1070
+    #2 0x40b2f2 in cpplib::OrderBook::insert_or_get_level(std::map<long, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> >, std::less<long>, std::allocator<std::pair<long const, std::unique_ptr<cpplib::Level, std::default_delete<cpplib::Level> > > > >&, long, long) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:102
+    #3 0x40ce17 in cpplib::OrderBook::insert_order(unsigned long, cpplib::Side, long, long) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:77
+    #4 0x40ef74 in cpplib::OrderBook::add_order(unsigned long, cpplib::Side, long, long) /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:197
+    #5 0x4be1d5 in operator() /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests.cpp:199
+    #6 0x4bea4a in __invoke_impl<void, main(int, char**)::<lambda()>&> /usr/include/c++/13/bits/invoke.h:61
+    #7 0x4bea4a in __invoke_r<void, main(int, char**)::<lambda()>&> /usr/include/c++/13/bits/invoke.h:111
+    #8 0x4bea4a in _M_invoke /usr/include/c++/13/bits/std_function.h:290
+    #9 0x4b46b3 in std::function<void ()>::operator()() const /usr/include/c++/13/bits/std_function.h:591
+    #10 0x4b46b3 in main /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests.cpp:221
+    #11 0x7fb83dd581c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 6d64b17fbac799e68da7ebd9985ddf9b5cb375e6)
+    #12 0x7fb83dd5828a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 6d64b17fbac799e68da7ebd9985ddf9b5cb375e6)
+    #13 0x404e14 in _start (/mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book_tests+0x404e14) (BuildId: ef06232357ef8202f59179b8803c56962404fb1a)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /mnt/c/Users/Chi-O/Documents/Codex/2026-10-06/referenced-chatgpt-conversation-this-is-an/outputs/order_book.cpp:54 in cpplib::OrderBook::remove_order(cpplib::Order*)
+Shadow bytes around the buggy address:
+  0x504000000100: fa fa fd fd fd fd fd fa fa fa 00 00 00 00 03 fa
+  0x504000000180: fa fa fd fd fd fd fd fa fa fa 00 00 00 00 01 fa
+  0x504000000200: fa fa fd fd fd fd fd fa fa fa 00 00 00 00 03 fa
+  0x504000000280: fa fa fd fd fd fd fd fa fa fa 00 00 00 00 03 fa
+  0x504000000300: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fd
+=>0x504000000380: fa fa fd fd[fd]fd fd fa fa fa fa fa fa fa fa fa
+  0x504000000400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000500: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000580: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==466==ABORTING

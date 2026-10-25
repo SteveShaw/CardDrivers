@@ -519,8 +519,15 @@ For example, if `w = [1, 3]`, the probability of picking index `0` is `1 / (1 + 
 **Output**
 [null,0]
 **Explanation**
-`Solution solution = new Solution([1]);`
-`solution.pickIndex(); // return 0. The only option is to return 0 since there is only one element in w`.
+
+```java
+Solution solution = new Solution([1]); 
+
+solution.pickIndex(); // return 0. The only option is to 
+                      // return 0 since there is 
+                      // only one element in w.
+
+```
 
 **Example 2:**
 
@@ -533,27 +540,38 @@ For example, if `w = [1, 3]`, the probability of picking index `0` is `1 / (1 + 
 `[null,1,1,1,1,0]`
 
  **Explanation**
-`Solution solution = new Solution([1, 3]);
-solution.pickIndex(); // return 1. It is returning the second element (index = 1) that has a probability of 3/4.
+
+```java
+Solution solution = new Solution([1, 3]);
+solution.pickIndex(); // return 1. 
+                      // It is returning 
+                      // the second element (index = 1) 
+                      // that has a probability of 3/4.
 solution.pickIndex(); // return 1
 solution.pickIndex(); // return 1
 solution.pickIndex(); // return 1
-solution.pickIndex(); // return 0. It is returning the first element (index = 0) that has a probability of 1/4.
+solution.pickIndex(); // return 0. 
+                      // It is returning the first element (index = 0) 
+                      // that has a probability of 1/4.
+                      
 Since this is a randomization problem, multiple answers are allowed.
-All of the following outputs can be considered correct`:
-`[null,1,1,1,1,0]` 
+All of the following outputs can be considered correct:
 
-`[null,1,1,1,1,1]` 
+[null,1,1,1,1,0]
 
-`[null,1,1,1,0,0]` 
+[null,1,1,1,1,1]
 
-`[null,1,1,1,0,1]` 
+[null,1,1,1,0,0]
 
-`[null,1,0,1,0,0]`
+[null,1,1,1,0,1] 
 
-` ......` 
+[null,1,0,1,0,0]
 
-`and so on`.
+ ......
+
+and so on.
+
+```
 
 ## Solution
 
@@ -627,3 +645,139 @@ Implement the Solution class:
 * `Solution(int n, int[] blacklist)` Initializes the object with the integer `n` and the blacklisted integers `blacklist`.
 
 * `int pick()` Returns a random integer in the range `[0, n - 1]` and not in `blacklist`.
+
+**Example 1:**
+
+**Input**
+`["Solution", "pick", "pick", "pick", "pick", "pick", "pick", "pick"]`
+`[[7, [2, 3, 5]], [], [], [], [], [], [], []]`
+**Output**
+`[null, 0, 4, 1, 6, 1, 0, 4]`
+**Explanation**
+
+```
+Solution solution = new Solution(7, [2, 3, 5]);
+solution.pick(); // return 0, any integer from [0,1,4,6] should be ok. Note that for every call of pick,
+                 // 0, 1, 4, and 6 must be equally likely to be returned (i.e., with probability 1/4).
+solution.pick(); // return 4
+solution.pick(); // return 1
+solution.pick(); // return 6
+solution.pick(); // return 1
+solution.pick(); // return 0
+solution.pick(); // return 4
+```
+
+### Solution
+
+If the `blacklist` has $m$ values, there are `bound = n - m` valid values. The algorithm should randomly chooses only from `[0, bound)` and remaps any blacklisted values in that range to valid values in `[bound, n)`
+
+For example
+
+```
+n = 7
+blacklist = [2, 3, 5]
+bound = 4
+
+Random range: [0,1,2,3]
+Valid values: [0,1,4,6]
+```
+
+The mapping becomes
+
+```
+2 -> 4
+3 -> 6
+```
+
+Use a `hash set` say `tail` records *balcklisted* numbers already in `[bound, n)`. These cannot be used as replacement values
+
+Then set 
+
+```cpp
+auto w = bound
+```
+
+here, `w` searches for available replacement values starting at `bound`
+
+For each `blacklisted` value below `bound`
+
+```cpp
+while(tail.count(w))
+{
+    ++w;
+}
+mapping[b] = w;
+++w;
+```
+
+This skips blacklisted tail values and maps the low blacklisted value to tnext valid tail value
+
+Take the above example
+
+```
+tail = [3, 5] and leaves only 2 to be mapped
+so starting from bound = 4 to try
+we can see 4 is not in tail
+so we can directly mapping 2 to 4, i.e. dict[2] = 4
+```
+
+```cpp
+class Solution {
+public:
+    
+    unordered_map<int,int> dict;
+    random_device seeder;
+    int bound {};
+    mt19937 rng{seeder()};
+    Solution(int n, vector<int>& blacklist)
+     {
+        int m = static_cast<int>(ssize(blacklist));
+        bound = n - m; // [0, bound) are non-blacklist values
+        unordered_set<int> tail;
+        for(auto b: blacklist)
+        {
+            if(b >= bound)
+            {
+                //put all backlisted values are in range [bound, n-1]
+                //into tail, those values can be obtained directly
+                //without mapping
+                tail.insert(b);
+            }
+        }
+
+        auto next_valid_value = bound;
+        for(auto b: blacklist)
+        {
+            //check which value in [bound, n-1] that b can be mapped to
+            if(b < bound)
+            {
+                while(tail.count(next_valid_value))
+                {
+                    ++next_valid_value;
+                }
+                
+                dict.try_emplace(b, next_valid_value);
+                ++next_valid_value;
+            }
+        }
+    }
+    
+    int pick() {
+        uniform_int_distribution<int> dist(0, bound - 1);
+        auto rand_val = dist(rng);
+
+        if(auto it = dict.find(rand_val); it != end(dict))
+        {
+            return it->second;
+        }
+
+        return rand_val;
+    }
+};
+
+/**
+ * Your Solution object will be instantiated and called as such:
+ * Solution* obj = new Solution(n, blacklist);
+ * int param_1 = obj->pick();
+ */
+```

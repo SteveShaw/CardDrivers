@@ -384,10 +384,15 @@ A **good subarray** is a subarray where:
 
 **Example 2:**
 
-**Input:** nums = [<u style="border: 0px solid rgba(0, 0, 0, 0.08); box-sizing: border-box; overflow-wrap: break-word; --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: #3b82f680; --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ;">23,2,6,4,7</u>], k = 6
+**Input:**
+```java 
+nums = [23,2,6,4,7]
+k = 6
+```
 **Output:** true
-**Explanation:** [23, 2, 6, 4, 7] is an continuous subarray of size 5 whose elements sum up to 42.
-42 is a multiple of 6 because 42 = 7 * 6 and 7 is an integer.
+**Explanation:** 
+`[23, 2, 6, 4, 7] is an continuous subarray of size 5 whose elements sum up to 42`.
+`42 is a multiple of 6 because 42 = 7 * 6 and 7 is an integer`.
 
 **Example 3:**
 
@@ -570,6 +575,37 @@ public:
         return res;
     }
 };
+```
+Another solution using only one variable
+
+```cpp
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+
+int longestWPI(vector<int>& hours) {
+    unordered_map<int, int> first;
+    int score = 0;
+    int longest = 0;
+
+    for (int i = 0; i < static_cast<int>(hours.size()); ++i) {
+        score += hours[i] > 8 ? 1 : -1;
+
+        if (score > 0) {
+            longest = i + 1;
+        } else {
+            if (first.count(score - 1)) {
+                longest = max(longest, i - first[score - 1]);
+            }
+        }
+
+        // Keep the earliest occurrence to maximize interval length.
+        first.emplace(score, i);
+    }
+
+    return longest;
+}
 ```
 
 ### 974. Subarray Sums Divisible By `K`
